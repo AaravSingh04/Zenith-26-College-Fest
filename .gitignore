@@ -1,0 +1,30 @@
+# Gradle & Android Build outputs
+.gradle/
+build/
+*/build/
+app/build/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.iml
+.idea/
+
+# Android Studio / IntelliJ / VS Code
+.vscode/
+*.class
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.log
+
+# OS generated
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store

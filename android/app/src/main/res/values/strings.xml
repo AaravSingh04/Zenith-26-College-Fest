@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Zenith \'26</string>
+    <string name="fest_title">ZENITH \'26</string>
+    <string name="fest_tagline">Ignite Your Passion. Unleash The Future.</string>
+    <string name="student_portal">Student Portal</string>
+    <string name="admin_dashboard">Admin Dashboard</string>
+</resources>
