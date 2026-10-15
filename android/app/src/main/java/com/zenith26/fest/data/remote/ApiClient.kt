@@ -20,7 +20,7 @@ object ApiClient {
     private const val KEY_BASE_URL = "base_url"
 
     // Public Cloudflare Tunnel for cloud emulators (Appetize.io) and any physical phone
-    const val DEFAULT_TUNNEL_URL = "https://rice-regard-wells-involves.trycloudflare.com/"
+    const val DEFAULT_TUNNEL_URL = "https://widely-lawrence-george-wax.trycloudflare.com/"
     // Default host for Android Emulator connecting to host machine
     const val DEFAULT_EMULATOR_URL = "http://10.0.2.2:8080/"
     // Preset for current dev machine's LAN address
