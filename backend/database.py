@@ -7,7 +7,19 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 # Database file location in the project root for SQLite fallback
 BASE_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = BASE_DIR / "fest.db"
+
+# On Vercel serverless environments, root filesystem is read-only; use /tmp
+if os.getenv("VERCEL"):
+    DB_PATH = Path("/tmp") / "fest.db"
+    ORIGINAL_DB = BASE_DIR / "fest.db"
+    if ORIGINAL_DB.exists() and not DB_PATH.exists():
+        import shutil
+        try:
+            shutil.copy2(ORIGINAL_DB, DB_PATH)
+        except Exception:
+            pass
+else:
+    DB_PATH = BASE_DIR / "fest.db"
 
 # PostgreSQL connection string from environment (Vercel Postgres, Supabase, Neon, Railway, etc.)
 DATABASE_URL = (
