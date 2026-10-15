@@ -99,6 +99,11 @@ fun ServerConfigDialog(
 
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     PresetChip(
+                        label = "🚀 Vercel Cloud Production (24/7 Global)",
+                        url = ApiClient.DEFAULT_VERCEL_URL,
+                        onClick = { urlText = ApiClient.DEFAULT_VERCEL_URL }
+                    )
+                    PresetChip(
                         label = "☁️ Cloud Tunnel (Appetize.io / Remote Phone)",
                         url = ApiClient.DEFAULT_TUNNEL_URL,
                         onClick = { urlText = ApiClient.DEFAULT_TUNNEL_URL }

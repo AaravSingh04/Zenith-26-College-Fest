@@ -19,6 +19,8 @@ object ApiClient {
     private const val PREFS_NAME = "zenith26_api_prefs"
     private const val KEY_BASE_URL = "base_url"
 
+    // Production Vercel deployment URL
+    const val DEFAULT_VERCEL_URL = "https://zenith-26-college-fest-nine.vercel.app/"
     // Public Cloudflare Tunnel for cloud emulators (Appetize.io) and any physical phone
     const val DEFAULT_TUNNEL_URL = "https://widely-lawrence-george-wax.trycloudflare.com/"
     // Default host for Android Emulator connecting to host machine
@@ -29,7 +31,7 @@ object ApiClient {
     const val DEFAULT_LOCALHOST_URL = "http://127.0.0.1:8080/"
 
     private var prefs: SharedPreferences? = null
-    private var currentBaseUrl: String = DEFAULT_TUNNEL_URL
+    private var currentBaseUrl: String = DEFAULT_VERCEL_URL
 
     private val gson = Gson()
 
@@ -51,7 +53,7 @@ object ApiClient {
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        currentBaseUrl = prefs?.getString(KEY_BASE_URL, DEFAULT_TUNNEL_URL) ?: DEFAULT_TUNNEL_URL
+        currentBaseUrl = prefs?.getString(KEY_BASE_URL, DEFAULT_VERCEL_URL) ?: DEFAULT_VERCEL_URL
         rebuildRetrofit()
     }
 

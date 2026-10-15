@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 import openpyxl
-from backend.database import get_db_connection, init_db
+from backend.database import get_db_connection, init_db, is_postgres
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     try:
@@ -92,6 +92,14 @@ def seed_events() -> int:
             ),
         )
         inserted += 1
+
+    if is_postgres():
+        try:
+            cursor.execute(
+                "SELECT setval(pg_get_serial_sequence('events', 'id'), COALESCE((SELECT MAX(id) FROM events), 1));"
+            )
+        except Exception:
+            pass
 
     conn.commit()
     conn.close()

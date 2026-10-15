@@ -1,32 +1,21 @@
 {
+  "version": 2,
   "rewrites": [
     {
-      "source": "/",
-      "destination": "/frontend/index.html"
-    },
-    {
-      "source": "/admin",
-      "destination": "/frontend/admin.html"
-    },
-    {
-      "source": "/admin.html",
-      "destination": "/frontend/admin.html"
-    },
-    {
-      "source": "/js/:path*",
-      "destination": "/frontend/js/:path*"
-    },
-    {
       "source": "/api/:path*",
-      "destination": "https://widely-lawrence-george-wax.trycloudflare.com/api/:path*"
+      "destination": "/api/index.py"
     },
     {
       "source": "/docs",
-      "destination": "https://widely-lawrence-george-wax.trycloudflare.com/docs"
+      "destination": "/api/index.py"
     },
     {
       "source": "/openapi.json",
-      "destination": "https://widely-lawrence-george-wax.trycloudflare.com/openapi.json"
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
     }
   ]
 }
