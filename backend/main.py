@@ -3,12 +3,33 @@ from pathlib import Path
 from typing import List, Optional
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Query, status
+import os
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+from fastapi import FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.database import get_db_connection, init_db
+from backend.ai_service import (
+    AssistantChatRequest,
+    AssistantChatResponse,
+    DescriptionGenRequest,
+    DescriptionGenResponse,
+    EventPlanRequest,
+    EventPlanResponse,
+    AnalyticsInsightsResponse,
+    check_rate_limit,
+    execute_assistant_chat,
+    execute_description_gen,
+    execute_event_plan,
+    execute_analytics_insights,
+)
 from backend.models import (
     EventDetail,
     EventIn,
@@ -402,6 +423,89 @@ def cancel_registration(registration_id: int):
     conn.commit()
     conn.close()
     return {"message": "Registration cancelled successfully"}
+
+
+# -----------------------------------------------------------------------------
+# AI Assistant & Planning Endpoints (Powered by OpenAI)
+# -----------------------------------------------------------------------------
+
+@app.get("/api/ai/status")
+def get_ai_status():
+    """Checks whether OpenAI API key is configured on the server."""
+    api_key = os.getenv("OPENAI_API_KEY", "")
+    return {
+        "configured": bool(api_key and api_key.strip()),
+        "model": "gpt-4o-mini",
+        "features": [
+            "ai_event_assistant",
+            "ai_description_generator",
+            "ai_event_planner",
+            "ai_analytics_insights"
+        ]
+    }
+
+
+@app.post("/api/ai/assistant", response_model=AssistantChatResponse)
+def ai_assistant_chat(req: AssistantChatRequest, request: Request):
+    """AI Event Assistant: Answers student questions strictly grounded in confirmed event data."""
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    check_rate_limit(client_ip)
+
+    conn = get_db_connection()
+    cursor = conn.execute("SELECT * FROM events ORDER BY event_date ASC, event_time ASC;")
+    raw_events = cursor.fetchall()
+    events_data = [get_event_with_seats(r, conn) for r in raw_events]
+    conn.close()
+
+    return execute_assistant_chat(req, events_data)
+
+
+@app.post("/api/ai/generate-description", response_model=DescriptionGenResponse)
+def ai_generate_description(req: DescriptionGenRequest, request: Request):
+    """AI Event Description Generator: Drafts descriptions and social captions for organizer review."""
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    check_rate_limit(client_ip)
+    return execute_description_gen(req)
+
+
+@app.post("/api/ai/plan-event", response_model=EventPlanResponse)
+def ai_plan_event(req: EventPlanRequest, request: Request):
+    """AI Event Planning Assistant: Generates checklists, schedules, resources, and budget estimates."""
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    check_rate_limit(client_ip)
+    return execute_event_plan(req)
+
+
+@app.post("/api/ai/analytics-insights", response_model=AnalyticsInsightsResponse)
+def ai_analytics_insights(request: Request):
+    """AI Event Analytics: Analyzes verified database registration and utilization rates."""
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    check_rate_limit(client_ip)
+
+    conn = get_db_connection()
+    cursor = conn.execute("SELECT * FROM events ORDER BY event_date ASC;")
+    raw_events = cursor.fetchall()
+    events_data = [get_event_with_seats(r, conn) for r in raw_events]
+
+    total_events = len(events_data)
+    total_cap = sum(e["capacity"] for e in events_data)
+    total_regs_row = conn.execute("SELECT COUNT(*) AS total FROM registrations;").fetchone()
+    total_regs = total_regs_row["total"] if total_regs_row else 0
+    util_pct = round((total_regs / total_cap * 100), 1) if total_cap > 0 else 0.0
+
+    cat_cursor = conn.execute("SELECT category, COUNT(*) as count FROM events GROUP BY category;")
+    events_by_cat = {row["category"]: row["count"] for row in cat_cursor.fetchall()}
+    conn.close()
+
+    stats_data = {
+        "total_events": total_events,
+        "total_registrations": total_regs,
+        "total_capacity": total_cap,
+        "overall_utilization_pct": util_pct,
+        "events_by_category": events_by_cat
+    }
+
+    return execute_analytics_insights(events_data, stats_data)
 
 
 # -----------------------------------------------------------------------------

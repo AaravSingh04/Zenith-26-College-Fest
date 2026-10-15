@@ -23,6 +23,11 @@ venv/
 env/
 *.log
 
+# Environment & Secrets
+.env
+.env.*
+*.env
+
 # OS generated
 Thumbs.db
 ehthumbs.db

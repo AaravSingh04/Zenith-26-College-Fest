@@ -70,6 +70,7 @@ const categoryBadgeClasses = {
 document.addEventListener("DOMContentLoaded", () => {
   setupEventListeners();
   loadAllAdminData();
+  setupAiAdminFeatures();
 });
 
 function setupEventListeners() {
@@ -477,3 +478,295 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+// ==============================================================================
+// Zenith AI Admin Features (OpenAI Integration)
+// ==============================================================================
+let latestGeneratedPlan = null;
+
+function setupAiAdminFeatures() {
+  const runInsightsBtn = document.getElementById("run-ai-insights-btn");
+  const insightsBtnIcon = document.getElementById("ai-insights-btn-icon");
+  const insightsBtnText = document.getElementById("ai-insights-btn-text");
+  const insightsContainer = document.getElementById("ai-insights-container");
+
+  const openPlannerBtn = document.getElementById("open-ai-planner-btn");
+  const plannerModal = document.getElementById("ai-planner-modal");
+  const closePlannerBtn = document.getElementById("close-ai-planner-btn");
+  const plannerForm = document.getElementById("ai-planner-form");
+  const plannerResults = document.getElementById("ai-planner-results");
+  const planSpinner = document.getElementById("ai-plan-spinner");
+  const planBtnText = document.getElementById("ai-plan-btn-text");
+  const planSubmitBtn = document.getElementById("ai-plan-submit-btn");
+  const planCopyToFormBtn = document.getElementById("ai-plan-copy-to-form-btn");
+
+  const draftDescBtn = document.getElementById("ai-generate-desc-btn");
+  const descStatus = document.getElementById("ai-desc-status");
+  const newEventTitle = document.getElementById("new-event-title");
+  const newEventCategory = document.getElementById("new-event-category");
+  const newEventDesc = document.getElementById("new-event-desc");
+
+  // --- 1. AI Analytics & Insights ---
+  if (runInsightsBtn && insightsContainer) {
+    runInsightsBtn.addEventListener("click", async () => {
+      insightsBtnIcon.textContent = "⏳";
+      insightsBtnText.textContent = "Analyzing metrics...";
+      runInsightsBtn.disabled = true;
+
+      try {
+        const res = await fetch("/api/ai/analytics-insights", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const formatted = escapeHtml(data.insights)
+            .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+            .replace(/\n/g, "<br/>");
+
+          insightsContainer.innerHTML = `
+            <div class="space-y-2 w-full animate-fade-in">
+              <div class="leading-relaxed text-slate-200">
+                ${formatted}
+              </div>
+              <div class="pt-2 mt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400">
+                <span>Verified: ${data.total_events_analyzed} events, ${data.total_registrations_analyzed} registrations</span>
+                <span class="italic">${escapeHtml(data.data_limitations)}</span>
+              </div>
+            </div>
+          `;
+          showAdminToast("✨", "AI Insights generated successfully.");
+        } else {
+          const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+          let msg = err.detail || "Failed to generate AI insights.";
+          if (res.status === 503) {
+            msg = "⚠️ OPENAI_API_KEY is not configured in Vercel / server environment.";
+          }
+          insightsContainer.innerHTML = `
+            <div class="text-rose-400 p-2">
+              <strong>Error:</strong> ${escapeHtml(msg)}
+            </div>
+          `;
+          showAdminToast("⚠️", msg);
+        }
+      } catch (err) {
+        insightsContainer.innerHTML = `<p class="text-rose-400">Network error while contacting AI service.</p>`;
+        showAdminToast("❌", "Network error when requesting AI insights.");
+      } finally {
+        insightsBtnIcon.textContent = "⚡";
+        insightsBtnText.textContent = "Generate AI Analysis";
+        runInsightsBtn.disabled = false;
+      }
+    });
+  }
+
+  // --- 2. AI Event Description Generator ---
+  if (draftDescBtn && newEventDesc) {
+    draftDescBtn.addEventListener("click", async () => {
+      const title = newEventTitle.value.trim();
+      const category = newEventCategory.value;
+
+      if (!title) {
+        descStatus.className = "text-[11px] font-semibold text-rose-600 mt-1 block";
+        descStatus.textContent = "⚠️ Please enter an Event Title first to generate a description.";
+        newEventTitle.focus();
+        return;
+      }
+
+      draftDescBtn.disabled = true;
+      descStatus.className = "text-[11px] font-medium text-indigo-600 mt-1 flex items-center gap-1.5";
+      descStatus.innerHTML = `
+        <span class="inline-block animate-spin rounded-full h-3 w-3 border-2 border-indigo-600 border-t-transparent"></span>
+        Generating description with OpenAI...
+      `;
+      descStatus.classList.remove("hidden");
+
+      try {
+        const res = await fetch("/api/ai/generate-description", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: title,
+            category: category,
+            target_audience: "College Fest Participants",
+            tone: "Energetic and professional",
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          newEventDesc.value = data.description;
+          descStatus.className = "text-[11px] font-semibold text-emerald-600 mt-1 block";
+          descStatus.textContent = "✨ Draft generated! You can review and edit it before creating the event.";
+          showAdminToast("✨", "AI Description draft generated.");
+        } else {
+          const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+          let msg = err.detail || "Failed to generate description.";
+          if (res.status === 503) {
+            msg = "OPENAI_API_KEY is not configured in server environment.";
+          }
+          descStatus.className = "text-[11px] font-semibold text-rose-600 mt-1 block";
+          descStatus.textContent = `⚠️ ${msg}`;
+        }
+      } catch (err) {
+        descStatus.className = "text-[11px] font-semibold text-rose-600 mt-1 block";
+        descStatus.textContent = "❌ Network error contacting AI generator.";
+      } finally {
+        draftDescBtn.disabled = false;
+      }
+    });
+  }
+
+  // --- 3. AI Event Planner Modal ---
+  if (openPlannerBtn && plannerModal) {
+    openPlannerBtn.addEventListener("click", () => {
+      plannerModal.classList.remove("hidden");
+    });
+
+    closePlannerBtn?.addEventListener("click", () => {
+      plannerModal.classList.add("hidden");
+    });
+
+    plannerModal.addEventListener("click", (e) => {
+      if (e.target === plannerModal) plannerModal.classList.add("hidden");
+    });
+
+    plannerForm?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("ai-plan-title").value.trim();
+      const category = document.getElementById("ai-plan-category").value;
+      const attendance = parseInt(document.getElementById("ai-plan-attendance").value, 10) || 100;
+      const venue = document.getElementById("ai-plan-venue").value.trim();
+      const objectives = document.getElementById("ai-plan-objectives").value.trim();
+
+      planSpinner.classList.remove("hidden");
+      planBtnText.textContent = "Synthesizing Event Plan with OpenAI...";
+      planSubmitBtn.disabled = true;
+
+      try {
+        const res = await fetch("/api/ai/plan-event", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            category,
+            expected_attendance: attendance,
+            venue_type: venue,
+            objectives,
+          }),
+        });
+
+        if (res.ok) {
+          const plan = await res.json();
+          latestGeneratedPlan = {
+            title,
+            category,
+            venue,
+            capacity: attendance,
+            plan,
+          };
+          renderAiPlan(plan);
+          plannerResults.classList.remove("hidden");
+          showAdminToast("📋", "AI Event Plan generated!");
+        } else {
+          const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+          let msg = err.detail || "Failed to generate event plan.";
+          if (res.status === 503) {
+            msg = "OPENAI_API_KEY is not configured in server environment.";
+          }
+          showAdminToast("⚠️", msg);
+        }
+      } catch (err) {
+        showAdminToast("❌", "Network error when requesting event plan.");
+      } finally {
+        planSpinner.classList.add("hidden");
+        planBtnText.textContent = "Generate Comprehensive Event Plan";
+        planSubmitBtn.disabled = false;
+      }
+    });
+
+    // Copy to Add Event Form handoff
+    planCopyToFormBtn?.addEventListener("click", () => {
+      if (!latestGeneratedPlan) return;
+
+      plannerModal.classList.add("hidden");
+      addEventModal.classList.remove("hidden");
+
+      newEventTitle.value = latestGeneratedPlan.title;
+      newEventCategory.value = latestGeneratedPlan.category;
+      document.getElementById("new-event-venue").value = latestGeneratedPlan.venue || "Auditorium";
+      document.getElementById("new-event-capacity").value = latestGeneratedPlan.capacity || 100;
+
+      if (latestGeneratedPlan.plan?.marketing_ideas?.length) {
+        newEventDesc.value = latestGeneratedPlan.plan.marketing_ideas[0];
+      }
+
+      showAdminToast("✨", "Plan details copied into Add Event form for review!");
+    });
+  }
+
+  function renderAiPlan(plan) {
+    const checklistEl = document.getElementById("ai-plan-checklist");
+    const scheduleEl = document.getElementById("ai-plan-schedule");
+    const resourcesEl = document.getElementById("ai-plan-resources");
+    const budgetEl = document.getElementById("ai-plan-budget");
+    const marketingEl = document.getElementById("ai-plan-marketing");
+    const disclaimerEl = document.getElementById("ai-plan-disclaimer");
+
+    // Checklist
+    if (checklistEl && plan.checklist) {
+      checklistEl.innerHTML = Object.entries(plan.checklist)
+        .map(([phase, tasks]) => `
+          <div class="mb-2">
+            <strong class="text-slate-800 uppercase text-[10px] tracking-wider block mb-1">${escapeHtml(phase.replace(/_/g, " "))}</strong>
+            <ul class="space-y-1">
+              ${(Array.isArray(tasks) ? tasks : []).map(t => `<li class="flex items-center gap-1.5 text-slate-600"><span>◽</span> ${escapeHtml(t)}</li>`).join("")}
+            </ul>
+          </div>
+        `).join("");
+    }
+
+    // Schedule
+    if (scheduleEl && Array.isArray(plan.tentative_schedule)) {
+      scheduleEl.innerHTML = plan.tentative_schedule
+        .map(s => `
+          <div class="flex items-start justify-between py-1 border-b border-slate-200/60 last:border-0">
+            <span class="font-bold text-slate-700 w-24 shrink-0">${escapeHtml(s.time_slot || "")}</span>
+            <span class="text-slate-600 flex-1">${escapeHtml(s.activity || "")}</span>
+          </div>
+        `).join("");
+    }
+
+    // Resources
+    if (resourcesEl && Array.isArray(plan.resources_and_equipment)) {
+      resourcesEl.innerHTML = plan.resources_and_equipment
+        .map(r => `<li>${escapeHtml(r)}</li>`)
+        .join("");
+    }
+
+    // Budget
+    if (budgetEl && Array.isArray(plan.estimated_budget)) {
+      budgetEl.innerHTML = plan.estimated_budget
+        .map(b => `
+          <div class="flex items-center justify-between py-1 border-b border-slate-200/60 last:border-0">
+            <span class="text-slate-700">${escapeHtml(b.item || "")}</span>
+            <span class="font-bold text-slate-900">${escapeHtml(b.cost_estimate || "")}</span>
+          </div>
+        `).join("");
+    }
+
+    // Marketing
+    if (marketingEl && Array.isArray(plan.marketing_ideas)) {
+      marketingEl.innerHTML = plan.marketing_ideas
+        .map(m => `<p class="mb-1">📢 ${escapeHtml(m)}</p>`)
+        .join("");
+    }
+
+    // Disclaimer
+    if (disclaimerEl) {
+      disclaimerEl.textContent = plan.disclaimer || "Note: This is an AI-generated draft to assist organizers. Checklists and budgets are editable estimates.";
+    }
+  }
+}
+

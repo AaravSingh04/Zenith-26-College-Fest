@@ -66,6 +66,12 @@
             <span class="hidden sm:inline">Refresh Data</span>
           </button>
 
+          <!-- AI Event Planner Button -->
+          <button id="open-ai-planner-btn" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow transition-all flex items-center space-x-1.5 active:scale-95">
+            <span>✨</span>
+            <span>AI Planner</span>
+          </button>
+
           <!-- Add Event Button (Stretch Goal) -->
           <button id="open-add-event-btn" class="text-xs font-bold px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow transition-all flex items-center space-x-1.5 active:scale-95">
             <span>➕</span>
@@ -165,6 +171,33 @@
           <div class="absolute bottom-0 left-0 right-0 h-1 bg-amber-500"></div>
         </div>
 
+      </section>
+
+      <!-- AI Executive Insights Card -->
+      <section class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white shadow-lg border border-slate-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center justify-center text-xl shrink-0">
+              ✨
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold tracking-wide uppercase text-white">AI Fest Executive Insights</h3>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-300 border border-indigo-400/30">Verified Metrics</span>
+              </div>
+              <p class="text-xs text-slate-400">Automated strategic summary derived strictly from live registrations & seat limits</p>
+            </div>
+          </div>
+          <button id="run-ai-insights-btn" class="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow flex items-center gap-1.5 active:scale-95 cursor-pointer">
+            <span id="ai-insights-btn-icon">⚡</span>
+            <span id="ai-insights-btn-text">Generate AI Analysis</span>
+          </button>
+        </div>
+
+        <!-- AI Insights Content Box -->
+        <div id="ai-insights-container" class="bg-white/5 rounded-xl p-4 border border-white/10 text-xs text-slate-300 leading-relaxed min-h-[60px] flex items-center">
+          <p class="text-slate-400 italic">Click <strong>"Generate AI Analysis"</strong> to generate real-time data insights, category distribution review, and capacity recommendations.</p>
+        </div>
       </section>
 
       <!-- Category Breakdown Card -->
@@ -315,8 +348,15 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Description</label>
-          <textarea id="new-event-desc" rows="2" placeholder="Brief details about the event..." class="w-full px-3 py-2 text-sm border rounded-xl focus:ring-2 focus:ring-indigo-500"></textarea>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-bold text-slate-700">Description</label>
+            <button type="button" id="ai-generate-desc-btn" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-lg border border-indigo-200 transition-colors cursor-pointer">
+              <span>✨</span>
+              <span>Draft with AI</span>
+            </button>
+          </div>
+          <textarea id="new-event-desc" rows="3" placeholder="Brief details about the event..." class="w-full px-3 py-2 text-sm border rounded-xl focus:ring-2 focus:ring-indigo-500"></textarea>
+          <div id="ai-desc-status" class="hidden text-[11px] font-medium mt-1"></div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -352,6 +392,132 @@
         </div>
       </form>
 
+    </div>
+  </div>
+
+  <!-- Stretch Modal 3: AI Event Planning Assistant Modal -->
+  <div id="ai-planner-modal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-sm p-4 flex items-center justify-center">
+    <div class="relative bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden animate-fade-in my-8 max-h-[90vh] flex flex-col">
+      
+      <!-- Modal Header -->
+      <div class="p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white flex items-center justify-between shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center justify-center text-lg">
+            📋
+          </div>
+          <div>
+            <h3 class="text-base font-bold flex items-center gap-2">
+              AI Event Planning Toolkit
+              <span class="text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-200 border border-purple-400/30">Organizer Draft</span>
+            </h3>
+            <p class="text-xs text-slate-300">Generate checklists, timeline schedules, equipment lists, and budget estimates</p>
+          </div>
+        </div>
+        <button id="close-ai-planner-btn" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <!-- Scrollable Form & Plan Body -->
+      <div class="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+        
+        <!-- Input Form -->
+        <form id="ai-planner-form" class="space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Event Concept / Title <span class="text-red-500">*</span></label>
+              <input type="text" id="ai-plan-title" required placeholder="e.g. RoboWars Championship" class="w-full px-3 py-2 text-xs border rounded-xl bg-white focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Category <span class="text-red-500">*</span></label>
+              <select id="ai-plan-category" required class="w-full px-3 py-2 text-xs border rounded-xl bg-white focus:ring-2 focus:ring-indigo-500">
+                <option value="Technical">Technical</option>
+                <option value="Cultural">Cultural</option>
+                <option value="Sports">Sports</option>
+                <option value="Gaming">Gaming</option>
+                <option value="Workshop">Workshop</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Expected Attendance</label>
+              <input type="number" id="ai-plan-attendance" min="10" max="5000" value="150" class="w-full px-3 py-2 text-xs border rounded-xl bg-white focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Venue Type</label>
+              <input type="text" id="ai-plan-venue" value="Campus Auditorium / Arena" class="w-full px-3 py-2 text-xs border rounded-xl bg-white focus:ring-2 focus:ring-indigo-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Specific Objectives or Requirements (Optional)</label>
+            <input type="text" id="ai-plan-objectives" placeholder="e.g. Needs 2 wireless mics, stage smoke, prizes for top 3" class="w-full px-3 py-2 text-xs border rounded-xl bg-white focus:ring-2 focus:ring-indigo-500">
+          </div>
+
+          <button type="submit" id="ai-plan-submit-btn" class="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer">
+            <span id="ai-plan-spinner" class="hidden inline-block animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent"></span>
+            <span id="ai-plan-btn-text">Generate Comprehensive Event Plan</span>
+          </button>
+        </form>
+
+        <!-- AI Plan Result Container -->
+        <div id="ai-planner-results" class="hidden space-y-4">
+          <div class="flex items-center justify-between border-b pb-2">
+            <h4 class="text-sm font-bold text-slate-800">Generated Organizer Plan</h4>
+            <button id="ai-plan-copy-to-form-btn" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow flex items-center gap-1 cursor-pointer">
+              <span>➕</span>
+              <span>Use in Add Event Form</span>
+            </button>
+          </div>
+
+          <!-- Cards Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Checklist -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <h5 class="font-bold text-slate-800 mb-2 flex items-center gap-1.5">
+                <span>📌</span> Organizer Checklist
+              </h5>
+              <div id="ai-plan-checklist" class="space-y-2 text-slate-600"></div>
+            </div>
+
+            <!-- Tentative Schedule -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <h5 class="font-bold text-slate-800 mb-2 flex items-center gap-1.5">
+                <span>⏰</span> Tentative Schedule
+              </h5>
+              <div id="ai-plan-schedule" class="space-y-1.5 text-slate-600"></div>
+            </div>
+
+            <!-- Logistics & Equipment -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <h5 class="font-bold text-slate-800 mb-2 flex items-center gap-1.5">
+                <span>📦</span> Logistics & Equipment
+              </h5>
+              <ul id="ai-plan-resources" class="list-disc list-inside space-y-1 text-slate-600"></ul>
+            </div>
+
+            <!-- Estimated Budget -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <h5 class="font-bold text-slate-800 mb-2 flex items-center gap-1.5">
+                <span>💰</span> Estimated Budget Breakdown
+              </h5>
+              <div id="ai-plan-budget" class="space-y-1.5 text-slate-600"></div>
+            </div>
+          </div>
+
+          <!-- Marketing Blurbs -->
+          <div class="bg-purple-50/60 p-4 rounded-xl border border-purple-200">
+            <h5 class="font-bold text-purple-900 mb-1 flex items-center gap-1.5">
+              <span>📢</span> Promotional & Social Media Caption
+            </h5>
+            <p id="ai-plan-marketing" class="text-slate-700 leading-relaxed"></p>
+          </div>
+
+          <!-- Disclaimer Note -->
+          <p id="ai-plan-disclaimer" class="text-[11px] text-slate-400 italic text-center"></p>
+        </div>
+
+      </div>
     </div>
   </div>
 
